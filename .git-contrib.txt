@@ -59,3 +59,4 @@
 2024-05-30T09:53:31.000Z feat: add helper
 2024-05-31T13:13:49.000Z chore: update docs
 2024-05-31T08:49:30.000Z style: format
+2024-06-01T14:43:25.000Z docs: update README
