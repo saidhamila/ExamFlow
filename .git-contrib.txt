@@ -60,3 +60,4 @@
 2024-05-31T13:13:49.000Z chore: update docs
 2024-05-31T08:49:30.000Z style: format
 2024-06-01T14:43:25.000Z docs: update README
+2024-06-01T15:34:59.000Z refactor: code cleanup
