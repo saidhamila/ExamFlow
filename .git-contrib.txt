@@ -69,3 +69,4 @@
 2024-06-03T14:01:13.000Z feat: add helper
 2024-06-03T16:26:05.000Z feat: add helper
 2024-06-03T12:38:35.000Z fix: typo
+2024-06-04T12:08:55.000Z test: add unit test
