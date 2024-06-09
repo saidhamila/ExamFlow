@@ -81,3 +81,4 @@
 2024-06-08T13:59:57.000Z feat: add helper
 2024-06-09T14:04:07.000Z style: format
 2024-06-09T11:00:58.000Z docs: update README
+2024-06-09T11:21:07.000Z ci: update pipeline
