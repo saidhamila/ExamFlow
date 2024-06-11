@@ -87,3 +87,4 @@
 2024-06-10T09:32:19.000Z refactor: code cleanup
 2024-06-11T17:29:53.000Z docs: update README
 2024-06-11T13:36:15.000Z fix: typo
+2024-06-11T08:52:50.000Z perf: optimize
