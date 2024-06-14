@@ -92,3 +92,4 @@
 2024-06-12T14:27:37.000Z fix: typo
 2024-06-13T14:34:34.000Z test: add unit test
 2024-06-13T14:09:16.000Z docs: update README
+2024-06-14T12:25:42.000Z style: format
