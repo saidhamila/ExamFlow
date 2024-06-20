@@ -102,3 +102,4 @@
 2024-06-18T13:25:34.000Z ci: update pipeline
 2024-06-19T09:13:01.000Z fix: typo
 2024-06-19T09:41:24.000Z docs: update README
+2024-06-20T15:24:02.000Z perf: optimize
