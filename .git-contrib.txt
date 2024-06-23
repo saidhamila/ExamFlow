@@ -112,3 +112,4 @@
 2024-06-22T12:40:41.000Z refactor: code cleanup
 2024-06-23T12:43:05.000Z perf: optimize
 2024-06-23T13:22:09.000Z fix: typo
+2024-06-23T11:46:20.000Z docs: update README
