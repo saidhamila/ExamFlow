@@ -115,3 +115,4 @@
 2024-06-23T11:46:20.000Z docs: update README
 2024-06-23T16:41:09.000Z feat: add helper
 2024-06-23T14:59:04.000Z chore: update docs
+2024-06-24T08:37:59.000Z chore: update docs
