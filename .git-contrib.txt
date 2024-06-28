@@ -123,3 +123,4 @@
 2024-06-26T12:09:45.000Z ci: update pipeline
 2024-06-27T15:28:58.000Z chore: update docs
 2024-06-27T13:23:39.000Z perf: optimize
+2024-06-28T13:32:26.000Z docs: update README
