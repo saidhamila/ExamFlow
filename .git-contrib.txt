@@ -180,3 +180,4 @@
 2024-07-20T10:12:10.000Z chore: update docs
 2024-07-20T17:48:58.000Z style: format
 2024-07-21T12:25:27.000Z perf: optimize
+2024-07-21T10:32:05.000Z docs: update README
