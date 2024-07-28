@@ -197,3 +197,4 @@
 2024-07-27T09:52:43.000Z style: format
 2024-07-27T10:40:25.000Z test: add unit test
 2024-07-27T09:29:14.000Z docs: update README
+2024-07-28T12:50:44.000Z refactor: code cleanup
