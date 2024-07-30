@@ -202,3 +202,4 @@
 2024-07-29T15:36:39.000Z docs: update README
 2024-07-29T16:33:39.000Z test: add unit test
 2024-07-30T14:11:30.000Z chore: update docs
+2024-07-30T11:00:16.000Z feat: add helper
