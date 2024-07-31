@@ -203,3 +203,4 @@
 2024-07-29T16:33:39.000Z test: add unit test
 2024-07-30T14:11:30.000Z chore: update docs
 2024-07-30T11:00:16.000Z feat: add helper
+2024-07-31T17:23:14.000Z style: format
