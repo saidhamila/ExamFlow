@@ -215,3 +215,4 @@
 2024-08-03T10:33:04.000Z chore: update docs
 2024-08-03T11:15:10.000Z perf: optimize
 2024-08-04T09:28:23.000Z feat: add helper
+2024-08-04T09:32:56.000Z feat: add helper
