@@ -248,3 +248,4 @@
 2024-08-17T11:45:21.000Z chore: update docs
 2024-08-17T10:44:46.000Z fix: typo
 2024-08-18T08:24:40.000Z test: add unit test
+2024-08-18T16:45:29.000Z refactor: code cleanup
