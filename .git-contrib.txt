@@ -262,3 +262,4 @@
 2024-08-22T13:04:45.000Z ci: update pipeline
 2024-08-23T13:11:36.000Z chore: update docs
 2024-08-23T09:39:43.000Z docs: update README
+2024-08-24T10:34:39.000Z chore: update docs
