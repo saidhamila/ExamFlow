@@ -296,3 +296,4 @@
 2024-09-05T10:10:06.000Z test: add unit test
 2024-09-06T08:26:10.000Z docs: update README
 2024-09-07T11:57:46.000Z ci: update pipeline
+2024-09-07T08:18:07.000Z feat: add helper
