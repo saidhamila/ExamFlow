@@ -312,3 +312,4 @@
 2024-09-11T08:38:46.000Z test: add unit test
 2024-09-11T13:11:07.000Z chore: update docs
 2024-09-12T14:02:52.000Z docs: update README
+2024-09-13T09:24:39.000Z ci: update pipeline
