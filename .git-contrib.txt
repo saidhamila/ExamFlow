@@ -330,3 +330,4 @@
 2024-09-19T15:22:15.000Z docs: update README
 2024-09-19T11:07:43.000Z perf: optimize
 2024-09-20T17:55:14.000Z ci: update pipeline
+2024-09-21T11:36:56.000Z chore: update docs
