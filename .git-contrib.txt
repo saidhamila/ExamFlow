@@ -351,3 +351,4 @@
 2024-09-29T12:57:50.000Z refactor: code cleanup
 2024-09-29T08:30:07.000Z fix: typo
 2024-09-29T16:35:27.000Z docs: update README
+2024-09-30T17:02:51.000Z feat: add helper
