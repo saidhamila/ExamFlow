@@ -356,3 +356,4 @@
 2024-10-01T11:10:20.000Z docs: update README
 2024-10-02T08:40:50.000Z chore: update docs
 2024-10-02T17:59:37.000Z fix: typo
+2024-10-03T16:30:19.000Z test: add unit test
