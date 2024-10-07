@@ -367,3 +367,4 @@
 2024-10-06T08:03:35.000Z test: add unit test
 2024-10-06T14:19:26.000Z refactor: code cleanup
 2024-10-06T15:09:49.000Z docs: update README
+2024-10-07T14:55:59.000Z ci: update pipeline
