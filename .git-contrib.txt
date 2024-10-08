@@ -370,3 +370,4 @@
 2024-10-07T14:55:59.000Z ci: update pipeline
 2024-10-07T17:50:27.000Z perf: optimize
 2024-10-08T12:57:14.000Z refactor: code cleanup
+2024-10-08T13:47:50.000Z feat: add helper
