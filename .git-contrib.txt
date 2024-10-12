@@ -379,3 +379,4 @@
 2024-10-11T08:58:40.000Z docs: update README
 2024-10-12T09:36:27.000Z perf: optimize
 2024-10-12T17:24:54.000Z chore: update docs
+2024-10-12T15:06:53.000Z style: format
