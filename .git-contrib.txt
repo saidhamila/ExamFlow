@@ -384,3 +384,4 @@
 2024-10-13T11:46:53.000Z test: add unit test
 2024-10-13T10:07:54.000Z test: add unit test
 2024-10-13T14:39:32.000Z docs: update README
+2024-10-13T11:05:01.000Z feat: add helper
