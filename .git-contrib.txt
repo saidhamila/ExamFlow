@@ -421,3 +421,4 @@
 2024-10-28T15:20:40.000Z ci: update pipeline
 2024-10-28T10:36:59.000Z docs: update README
 2024-10-29T09:31:08.000Z refactor: code cleanup
+2024-10-29T12:53:40.000Z feat: add helper
