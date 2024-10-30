@@ -422,3 +422,4 @@
 2024-10-28T10:36:59.000Z docs: update README
 2024-10-29T09:31:08.000Z refactor: code cleanup
 2024-10-29T12:53:40.000Z feat: add helper
+2024-10-30T11:19:51.000Z test: add unit test
