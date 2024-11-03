@@ -432,3 +432,4 @@
 2024-11-02T10:44:43.000Z chore: update docs
 2024-11-02T13:45:51.000Z docs: update README
 2024-11-03T08:40:10.000Z perf: optimize
+2024-11-03T14:09:44.000Z test: add unit test
