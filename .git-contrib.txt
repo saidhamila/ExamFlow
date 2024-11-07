@@ -439,3 +439,4 @@
 2024-11-05T14:26:57.000Z docs: update README
 2024-11-06T10:19:52.000Z perf: optimize
 2024-11-07T13:25:57.000Z feat: add helper
+2024-11-07T13:47:49.000Z ci: update pipeline
