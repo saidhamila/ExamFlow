@@ -481,3 +481,4 @@
 2024-11-21T09:02:07.000Z docs: update README
 2024-11-21T14:02:23.000Z ci: update pipeline
 2024-11-22T16:00:38.000Z fix: typo
+2024-11-23T14:06:31.000Z ci: update pipeline
