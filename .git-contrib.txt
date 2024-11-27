@@ -492,3 +492,4 @@
 2024-11-25T09:15:12.000Z docs: update README
 2024-11-25T09:28:25.000Z docs: update README
 2024-11-26T08:50:38.000Z ci: update pipeline
+2024-11-27T08:12:57.000Z feat: add helper
