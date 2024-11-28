@@ -494,3 +494,4 @@
 2024-11-26T08:50:38.000Z ci: update pipeline
 2024-11-27T08:12:57.000Z feat: add helper
 2024-11-27T17:14:15.000Z style: format
+2024-11-28T17:40:34.000Z fix: typo
