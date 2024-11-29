@@ -495,3 +495,4 @@
 2024-11-27T08:12:57.000Z feat: add helper
 2024-11-27T17:14:15.000Z style: format
 2024-11-28T17:40:34.000Z fix: typo
+2024-11-29T09:51:55.000Z chore: update docs
