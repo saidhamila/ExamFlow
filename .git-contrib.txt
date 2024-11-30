@@ -498,3 +498,4 @@
 2024-11-29T09:51:55.000Z chore: update docs
 2024-11-29T08:14:54.000Z style: format
 2024-11-30T11:58:57.000Z docs: update README
+2024-11-30T09:26:37.000Z feat: add helper
