@@ -507,3 +507,4 @@
 2024-12-02T11:00:09.000Z feat: add helper
 2024-12-02T13:59:21.000Z fix: typo
 2024-12-03T10:21:22.000Z chore: update docs
+2024-12-03T14:24:46.000Z chore: update docs
