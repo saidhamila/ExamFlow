@@ -521,3 +521,4 @@
 2024-12-08T09:28:59.000Z feat: add helper
 2024-12-09T13:39:42.000Z fix: typo
 2024-12-09T09:59:51.000Z chore: update docs
+2024-12-09T16:25:43.000Z perf: optimize
