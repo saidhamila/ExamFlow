@@ -530,3 +530,4 @@
 2024-12-14T14:15:54.000Z refactor: code cleanup
 2024-12-14T08:54:04.000Z style: format
 2024-12-14T13:03:19.000Z docs: update README
+2024-12-14T13:22:55.000Z chore: update docs
