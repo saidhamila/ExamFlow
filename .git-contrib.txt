@@ -544,3 +544,4 @@
 2024-12-20T15:57:33.000Z refactor: code cleanup
 2024-12-20T16:17:32.000Z feat: add helper
 2024-12-20T10:43:49.000Z ci: update pipeline
+2024-12-21T15:04:25.000Z perf: optimize
