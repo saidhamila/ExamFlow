@@ -565,3 +565,4 @@
 2024-12-27T11:49:49.000Z feat: add helper
 2024-12-28T08:43:42.000Z chore: update docs
 2024-12-28T17:45:21.000Z fix: typo
+2024-12-29T15:33:26.000Z docs: update README
