@@ -576,3 +576,4 @@
 2025-01-01T14:28:50.000Z fix: typo
 2025-01-01T14:11:06.000Z perf: optimize
 2025-01-02T16:24:54.000Z ci: update pipeline
+2025-01-02T16:24:28.000Z test: add unit test
