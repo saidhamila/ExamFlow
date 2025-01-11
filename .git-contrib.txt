@@ -600,3 +600,4 @@
 2025-01-10T11:34:58.000Z chore: update docs
 2025-01-10T17:02:08.000Z ci: update pipeline
 2025-01-11T08:25:35.000Z docs: update README
+2025-01-11T14:26:57.000Z test: add unit test
