@@ -615,3 +615,4 @@
 2025-01-15T09:58:44.000Z style: format
 2025-01-16T12:57:03.000Z chore: update docs
 2025-01-16T10:47:35.000Z chore: update docs
+2025-01-17T16:20:00.000Z feat: add helper
