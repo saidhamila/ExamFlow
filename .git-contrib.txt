@@ -650,3 +650,4 @@
 2025-01-31T17:39:56.000Z fix: typo
 2025-02-01T14:57:05.000Z test: add unit test
 2025-02-01T16:15:57.000Z ci: update pipeline
+2025-02-01T15:04:04.000Z docs: update README
