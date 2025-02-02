@@ -653,3 +653,4 @@
 2025-02-01T15:04:04.000Z docs: update README
 2025-02-02T13:57:19.000Z fix: typo
 2025-02-02T11:02:12.000Z style: format
+2025-02-02T12:58:54.000Z feat: add helper
