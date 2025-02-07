@@ -665,3 +665,4 @@
 2025-02-06T08:26:51.000Z docs: update README
 2025-02-06T13:43:17.000Z style: format
 2025-02-07T10:26:03.000Z ci: update pipeline
+2025-02-07T15:19:56.000Z test: add unit test
