@@ -671,3 +671,4 @@
 2025-02-08T16:36:19.000Z docs: update README
 2025-02-08T12:18:28.000Z test: add unit test
 2025-02-09T11:10:17.000Z chore: update docs
+2025-02-09T17:32:06.000Z style: format
