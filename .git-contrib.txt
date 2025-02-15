@@ -688,3 +688,4 @@
 2025-02-15T10:54:30.000Z docs: update README
 2025-02-15T09:25:48.000Z style: format
 2025-02-15T15:04:02.000Z perf: optimize
+2025-02-15T13:07:14.000Z feat: add helper
