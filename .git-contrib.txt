@@ -760,3 +760,4 @@
 2025-03-18T08:02:37.000Z test: add unit test
 2025-03-18T08:20:11.000Z ci: update pipeline
 2025-03-19T09:00:10.000Z test: add unit test
+2025-03-19T11:08:19.000Z feat: add helper
