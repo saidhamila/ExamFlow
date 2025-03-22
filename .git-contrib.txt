@@ -765,3 +765,4 @@
 2025-03-21T12:50:38.000Z docs: update README
 2025-03-21T11:51:11.000Z fix: typo
 2025-03-21T08:09:21.000Z style: format
+2025-03-22T16:09:29.000Z feat: add helper
