@@ -767,3 +767,4 @@
 2025-03-21T08:09:21.000Z style: format
 2025-03-22T16:09:29.000Z feat: add helper
 2025-03-22T15:42:35.000Z refactor: code cleanup
+2025-03-23T17:24:21.000Z test: add unit test
