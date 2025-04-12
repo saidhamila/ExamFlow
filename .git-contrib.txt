@@ -816,3 +816,4 @@
 2025-04-11T09:35:06.000Z chore: update docs
 2025-04-12T15:50:44.000Z chore: update docs
 2025-04-12T15:03:44.000Z test: add unit test
+2025-04-12T09:06:25.000Z perf: optimize
