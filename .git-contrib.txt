@@ -824,3 +824,4 @@
 2025-04-13T08:56:53.000Z chore: update docs
 2025-04-14T13:06:21.000Z docs: update README
 2025-04-15T08:09:59.000Z feat: add helper
+2025-04-15T08:22:54.000Z style: format
