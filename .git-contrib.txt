@@ -827,3 +827,4 @@
 2025-04-15T08:22:54.000Z style: format
 2025-04-16T17:52:48.000Z feat: add helper
 2025-04-16T16:15:36.000Z docs: update README
+2025-04-17T09:56:28.000Z test: add unit test
