@@ -829,3 +829,4 @@
 2025-04-16T16:15:36.000Z docs: update README
 2025-04-17T09:56:28.000Z test: add unit test
 2025-04-17T12:36:30.000Z refactor: code cleanup
+2025-04-17T14:50:45.000Z style: format
