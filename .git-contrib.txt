@@ -841,3 +841,4 @@
 2025-04-20T17:20:01.000Z docs: update README
 2025-04-21T14:35:45.000Z test: add unit test
 2025-04-22T11:03:57.000Z style: format
+2025-04-22T17:16:39.000Z perf: optimize
