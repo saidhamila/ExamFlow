@@ -851,3 +851,4 @@
 2025-04-25T17:47:52.000Z docs: update README
 2025-04-25T10:18:56.000Z test: add unit test
 2025-04-26T08:34:24.000Z fix: typo
+2025-04-26T14:14:49.000Z feat: add helper
