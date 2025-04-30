@@ -1,0 +1,228 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum UserRole {
+  ADMIN
+  CHEF // Chef de Département
+  DIRECTEUR // Directeur des Études
+  ENSEIGNANT // Teacher
+  ETUDIANT // Student
+}
+
+enum ExamStudentStatus {
+  INSCRIT // Registered
+  ABSENT
+  ANNULE // Cancelled
+}
+
+enum NotificationStatus {
+  ENVOYEE // Sent
+  LUE // Read
+  ARCHIVEE // Archived
+}
+
+enum NotificationType {
+  MISE_A_JOUR // Update
+  VALIDATION
+  RAPPEL // Reminder
+}
+
+enum ValidationStatus {
+  EN_ATTENTE // Pending
+  VALIDÉ // Validated
+  REFUSÉ // Refused
+}
+
+// --- Models ---
+
+// 1. Table users
+model User {
+  userId        String     @id @default(cuid()) @map("user_id")
+  name          String?    @db.VarChar(100)
+  email         String     @unique @db.VarChar(100)
+  password      String     @db.VarChar(255) // Ensure this is hashed
+  role          UserRole
+  departmentId  String?    @map("department_id") // Optional FK, as not all users might belong to a dept
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  department        Department?     @relation("DepartmentHead", fields: [departmentId], references: [departmentId]) // Relation for non-head users
+  departmentHeaded  Department?     @relation("DepartmentHeadUser") // Relation if user is head of dept
+  invigilatorAssignments Invigilator[] // Relation to invigilator assignments
+  studentProfile    Student?        // Relation if user is a student
+  notifications     Notification[]  // Notifications received by user
+  logs              ScheduleLog[]   // Actions performed by user
+  validations       Validation[]    @relation("ValidationUser") // Validations performed by user
+
+  @@map("users")
+}
+
+// 2. Table departments
+model Department {
+  departmentId String @id @default(cuid()) @map("department_id")
+  name         String @db.VarChar(100)
+  headId       String? @unique @map("head_id") // FK to the User who is the head
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  head         User?    @relation("DepartmentHeadUser", fields: [headId], references: [userId]) // Relation to the head user
+  users        User[]   @relation("DepartmentHead") // Users belonging to this department (non-heads)
+  exams        Exam[]   // Exams managed by this department
+
+  @@map("departments")
+}
+
+// 3. Table exams
+model Exam {
+  examId        String   @id @default(cuid()) @map("exam_id")
+  subject       String   @db.VarChar(100)
+  departmentId  String   @map("department_id") // FK to Department
+  examDate      DateTime @db.Date @map("exam_date") // Changed to DateTime to potentially store time if needed, but mapped to Date type
+  startTime     DateTime @db.Time @map("start_time") // Mapped to Time type
+  endTime       DateTime @db.Time @map("end_time") // Mapped to Time type
+  difficulty    Int? // Optional difficulty
+  coefficient   Int? // Optional coefficient
+  isDuplicate   Boolean  @default(false) @map("is_duplicate")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  department    Department      @relation(fields: [departmentId], references: [departmentId])
+  examRooms     ExamRoom[]      // Rooms booked for this exam
+  invigilators  Invigilator[]   // Invigilators assigned to this exam
+  students      ExamStudent[]   // Students registered for this exam
+  validations   Validation[]    @relation("ValidationExam") // Validations related to this exam
+
+  @@map("exams")
+}
+
+// 4. Table rooms
+model Room {
+  roomId      String   @id @default(cuid()) @map("room_id")
+  roomName    String   @db.VarChar(50) @map("room_name")
+  capacity    Int
+  location    String?  @db.VarChar(100)
+  isAvailable Boolean  @default(true) @map("is_available")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  examRooms    ExamRoom[]    // Bookings for this room
+  invigilators Invigilator[] // Invigilators assigned to this room for specific exams
+
+  @@map("rooms")
+}
+
+// 5. Table exam_rooms (Junction Table)
+model ExamRoom {
+  examRoomId String @id @default(cuid()) @map("exam_room_id")
+  examId     String @map("exam_id") // FK to Exam
+  roomId     String @map("room_id") // FK to Room
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  exam Exam @relation(fields: [examId], references: [examId])
+  room Room @relation(fields: [roomId], references: [roomId])
+
+  @@unique([examId, roomId]) // Ensure a room is booked only once per exam
+  @@map("exam_rooms")
+}
+
+// 6. Table invigilators (Junction Table for Assignments)
+model Invigilator {
+  invigilatorId String @id @default(cuid()) @map("invigilator_id")
+  userId        String @map("user_id") // FK to User (who is the invigilator)
+  examId        String @map("exam_id") // FK to Exam
+  roomId        String @map("room_id") // FK to Room (where invigilation takes place)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId])
+  exam Exam @relation(fields: [examId], references: [examId])
+  room Room @relation(fields: [roomId], references: [roomId])
+
+  @@unique([userId, examId, roomId]) // Prevent duplicate assignments
+  @@map("invigilators")
+}
+
+// 7. Table students
+model Student {
+  studentId String @id @default(cuid()) @map("student_id")
+  userId    String @unique @map("user_id") // FK to User
+  program   String? @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [userId])
+  examStudents ExamStudent[] // Exams the student is participating in
+
+  @@map("students")
+}
+
+// 8. Table exam_students (Junction Table)
+model ExamStudent {
+  examStudentId String            @id @default(cuid()) @map("exam_student_id")
+  examId        String            @map("exam_id") // FK to Exam
+  studentId     String            @map("student_id") // FK to Student
+  status        ExamStudentStatus @default(INSCRIT)
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  exam    Exam    @relation(fields: [examId], references: [examId])
+  student Student @relation(fields: [studentId], references: [studentId])
+
+  @@unique([examId, studentId]) // Ensure student registers only once per exam
+  @@map("exam_students")
+}
+
+// 9. Table notifications
+model Notification {
+  notificationId String           @id @default(cuid()) @map("notification_id")
+  userId         String           @map("user_id") // FK to User (recipient)
+  message        String           @db.Text
+  status         NotificationStatus @default(ENVOYEE)
+  notificationType NotificationType @map("notification_type")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId])
+
+  @@map("notifications")
+}
+
+// 10. Table schedule_logs
+model ScheduleLog {
+  logId       String   @id @default(cuid()) @map("log_id")
+  action      String   @db.VarChar(50)
+  description String?  @db.Text
+  performedBy String   @map("performed_by") // FK to User
+  timestamp   DateTime @default(now())
+
+  user User @relation(fields: [performedBy], references: [userId])
+
+  @@map("schedule_logs")
+}
+
+// 11. Table validations
+model Validation {
+  validationId   String           @id @default(cuid()) @map("validation_id")
+  examId         String           @map("exam_id") // FK to Exam being validated
+  validatedBy    String           @map("validated_by") // FK to User (validator)
+  status         ValidationStatus @default(EN_ATTENTE)
+  comments       String?          @db.Text
+  validationDate DateTime?        @map("validation_date") // Nullable until validated
+
+  exam Exam @relation("ValidationExam", fields: [examId], references: [examId]) // Corrected relation to Exam model
+  user User @relation("ValidationUser", fields: [validatedBy], references: [userId]) // Added explicit relation name
+
+  @@map("validations")
+}
