@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation"; // Import redirect
 import { cookies } from "next/headers";
 import { z } from "zod"; // For validation
 import { prisma } from "./db"; // Import Prisma client
@@ -679,11 +680,11 @@ export async function logoutAction() {
     cookies().set("auth-session", "", { expires: new Date(0), path: '/' }); // Use the correct cookie name
     // Optionally, perform other cleanup like invalidating tokens in DB
 
-    // Revalidate root path or redirect (handled by middleware/route)
-    revalidatePath("/");
-    console.log("User logged out, session cookie cleared.");
-    // No explicit return needed, or return a success indicator if preferred
-    return { success: true, message: "Logged out successfully." };
+    // Redirect immediately to the login page
+    console.log("User logged out, session cookie cleared. Redirecting...");
+    // Remove revalidatePath as redirect handles navigation
+    redirect('/');
+    // Note: Code after redirect() is usually not executed in Server Actions
 }
 
 
