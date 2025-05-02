@@ -9,7 +9,8 @@ import { InvigilatorStats } from "@/components/invigilator-stats"
 import { RecentActivity } from "@/components/recent-activity"
 // Import getNotifications
 import { getDashboardStats, getUpcomingExams, getRecentActivity, getInvigilatorStatsData, getNotifications } from "@/lib/data" // Import data functions
-import type { Exam } from "@/lib/data" // Import only Exam type
+// Removed incorrect import: import type { Exam } from "@/lib/data"
+import type { Exam as PrismaExam } from "@prisma/client"; // Import correct type
 
 // Update the top section to be responsive with the new fixed sidebar
 export default async function AdminDashboardPage() { // Make component async
@@ -26,7 +27,8 @@ export default async function AdminDashboardPage() { // Make component async
   return (
     // Pass notifications to the layout
     <AdminLayout notifications={notifications}>
-      <div className="flex flex-col h-full">
+      {/* Replace wrapper class with the one from departments/rooms page */}
+      <div className="space-y-6">
         <div className="flex items-center justify-between py-4 border-b sticky top-0 bg-white z-10 px-4 md:px-6">
           <h1 className="text-xl xs:text-2xl font-semibold">Dashboard</h1>
           <div className="flex items-center gap-2">
@@ -37,7 +39,8 @@ export default async function AdminDashboardPage() { // Make component async
         </div>
 
         {/* Use fetched stats data */}
-        <div className="grid gap-4 p-4 md:p-6 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
+        {/* Remove p-4 md:p-6 */}
+        <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
@@ -80,7 +83,8 @@ export default async function AdminDashboardPage() { // Make component async
           </Card>
         </div>
 
-        <div className="grid gap-4 p-4 md:p-6 grid-cols-1 lg:grid-cols-7">
+        {/* Remove p-4 md:p-6 */}
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Upcoming Exams</CardTitle>
@@ -119,7 +123,8 @@ export default async function AdminDashboardPage() { // Make component async
           </Card>
         </div>
 
-        <div className="p-4 md:p-6">
+        {/* Remove p-4 md:p-6 */}
+        <div>
           <Card>
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>

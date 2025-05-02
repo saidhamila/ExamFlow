@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client" // Explicit output path
 }
 
 datasource db {
@@ -75,7 +76,7 @@ model User {
 // 2. Table departments
 model Department {
   departmentId String @id @default(cuid()) @map("department_id")
-  name         String @db.VarChar(100)
+  name         String @unique @db.VarChar(100)
   headId       String? @unique @map("head_id") // FK to the User who is the head
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -113,7 +114,7 @@ model Exam {
 // 4. Table rooms
 model Room {
   roomId      String   @id @default(cuid()) @map("room_id")
-  roomName    String   @db.VarChar(50) @map("room_name")
+  roomName    String   @unique @db.VarChar(50) @map("room_name")
   capacity    Int
   location    String?  @db.VarChar(100)
   isAvailable Boolean  @default(true) @map("is_available")
@@ -133,7 +134,7 @@ model ExamRoom {
   roomId     String @map("room_id") // FK to Room
   createdAt  DateTime @default(now()) @map("created_at")
 
-  exam Exam @relation(fields: [examId], references: [examId])
+  exam Exam @relation(fields: [examId], references: [examId], onDelete: Cascade)
   room Room @relation(fields: [roomId], references: [roomId])
 
   @@unique([examId, roomId]) // Ensure a room is booked only once per exam
@@ -149,7 +150,7 @@ model Invigilator {
   createdAt     DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [userId])
-  exam Exam @relation(fields: [examId], references: [examId])
+  exam Exam @relation(fields: [examId], references: [examId], onDelete: Cascade)
   room Room @relation(fields: [roomId], references: [roomId])
 
   @@unique([userId, examId, roomId]) // Prevent duplicate assignments
@@ -178,7 +179,7 @@ model ExamStudent {
   status        ExamStudentStatus @default(INSCRIT)
   createdAt     DateTime          @default(now()) @map("created_at")
 
-  exam    Exam    @relation(fields: [examId], references: [examId])
+  exam    Exam    @relation(fields: [examId], references: [examId], onDelete: Cascade)
   student Student @relation(fields: [studentId], references: [studentId])
 
   @@unique([examId, studentId]) // Ensure student registers only once per exam
@@ -221,7 +222,7 @@ model Validation {
   comments       String?          @db.Text
   validationDate DateTime?        @map("validation_date") // Nullable until validated
 
-  exam Exam @relation("ValidationExam", fields: [examId], references: [examId]) // Corrected relation to Exam model
+  exam Exam @relation("ValidationExam", fields: [examId], references: [examId], onDelete: Cascade) // Corrected relation to Exam model
   user User @relation("ValidationUser", fields: [validatedBy], references: [userId]) // Added explicit relation name
 
   @@map("validations")

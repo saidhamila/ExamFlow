@@ -4,7 +4,7 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, LogOut, Menu, User, Bell, CalendarDays } from "lucide-react"
+import { Calendar, LogOut, Menu, User, Bell, CalendarDays, ClipboardCheck, Briefcase } from "lucide-react" // Added Chef/Directeur icons
 import { useState, useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -18,9 +18,10 @@ import type { Notification } from "@/lib/data"; // Import Notification type
 interface UserLayoutProps {
   children: React.ReactNode;
   notifications: Notification[]; // Add notifications prop
+  userRole?: 'ADMIN' | 'USER' | 'CHEF' | 'DIRECTEUR'; // Add optional userRole prop
 }
 
-export function UserLayout({ children, notifications }: UserLayoutProps) { // Destructure notifications from props
+export function UserLayout({ children, notifications, userRole }: UserLayoutProps) { // Destructure props
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const pathname = usePathname()
@@ -95,6 +96,24 @@ export function UserLayout({ children, notifications }: UserLayoutProps) { // De
                       Calendar View
                     </Link>
                   </Button>
+                  {/* Conditional Chef Link - Mobile */}
+                  {userRole === 'CHEF' && (
+                    <Button variant={pathname === "/chef/dashboard" ? "secondary" : "ghost"} className="justify-start" asChild>
+                      <Link href="/chef/dashboard">
+                        <ClipboardCheck className="mr-2 h-4 w-4" />
+                        Chef Dashboard
+                      </Link>
+                    </Button>
+                  )}
+                  {/* Conditional Directeur Link - Mobile */}
+                  {userRole === 'DIRECTEUR' && (
+                    <Button variant={pathname === "/directeur/dashboard" ? "secondary" : "ghost"} className="justify-start" asChild>
+                      <Link href="/directeur/dashboard">
+                        <Briefcase className="mr-2 h-4 w-4" />
+                        Directeur Dashboard
+                      </Link>
+                    </Button>
+                  )}
                   <Button variant={pathname === "/profile" ? "secondary" : "ghost"} className="justify-start" asChild>
                     <Link href="/profile">
                       <User className="mr-2 h-4 w-4" />
@@ -153,6 +172,24 @@ export function UserLayout({ children, notifications }: UserLayoutProps) { // De
                   Calendar View
                 </Link>
               </Button>
+              {/* Conditional Chef Link - Desktop */}
+              {userRole === 'CHEF' && (
+                <Button variant={pathname === "/chef/dashboard" ? "secondary" : "ghost"} className="justify-start" asChild>
+                  <Link href="/chef/dashboard">
+                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                    Chef Dashboard
+                  </Link>
+                </Button>
+              )}
+              {/* Conditional Directeur Link - Desktop */}
+              {userRole === 'DIRECTEUR' && (
+                <Button variant={pathname === "/directeur/dashboard" ? "secondary" : "ghost"} className="justify-start" asChild>
+                  <Link href="/directeur/dashboard">
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Directeur Dashboard
+                  </Link>
+                </Button>
+              )}
               <Button variant={pathname === "/profile" ? "secondary" : "ghost"} className="justify-start" asChild>
                 <Link href="/profile">
                   <User className="mr-2 h-4 w-4" />

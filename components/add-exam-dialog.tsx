@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useState, useTransition, useRef } from "react" // Import useTransition and useRef
-import { Plus, Loader2 } from "lucide-react" // Import Loader2
+import { useState, useTransition, useRef } from "react"
+import { Plus, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
-  DialogClose, // Import DialogClose
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -18,35 +18,56 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast" // Import useToast
-import { addExamAction } from "@/lib/actions" // Import server action
+import { Checkbox } from "@/components/ui/checkbox" // Added Checkbox
+import { ScrollArea } from "@/components/ui/scroll-area" // Added ScrollArea
+import { useToast } from "@/hooks/use-toast"
+import { addExamAction } from "@/lib/actions"
+// Remove useSessionData import
 
-// Define props including invigilator options
+// Define props including options for selects/checkboxes
 interface AddExamDialogProps {
+  departmentOptions: { value: string; label: string }[]; // Add back prop
+  roomOptions: { value: string; label: string }[]; // Add back prop
   invigilatorOptions: { value: string; label: string }[];
+  children?: React.ReactNode; // Allow wrapping a custom trigger
 }
 
-export function AddExamDialog({ invigilatorOptions }: AddExamDialogProps) {
+export function AddExamDialog({
+    departmentOptions, // Add back prop
+    roomOptions, // Add back prop
+    invigilatorOptions,
+    children
+}: AddExamDialogProps) {
+  // Remove useSessionData hook call
   const [open, setOpen] = useState(false)
-  const [isPending, startTransition] = useTransition() // For loading state
+  const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
-  const formRef = useRef<HTMLFormElement>(null); // Ref for resetting the form
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Server action call
   const handleSubmit = async (formData: FormData) => {
+    // Basic client-side check for multi-selects
+    if (formData.getAll('roomIds').length === 0) {
+        toast({ title: "Validation Failed", description: "Please select at least one room.", variant: "destructive" });
+        return;
+    }
+     if (formData.getAll('invigilatorUserIds').length === 0) {
+        toast({ title: "Validation Failed", description: "Please select at least one invigilator.", variant: "destructive" });
+        return;
+    }
+
     startTransition(async () => {
       const result = await addExamAction(formData);
 
       if (result?.errors) {
-        // Handle validation errors (e.g., display them)
-        // For now, just show a generic error toast
         console.error("Validation Errors:", result.errors);
+         // Improve error display if possible, e.g., map errors to fields
         toast({
           title: "Validation Failed",
           description: result.message || "Please check the form fields.",
           variant: "destructive",
         });
-      } else if (result?.message && result.message.includes("Failed")) {
+      } else if (result?.message && (result.message.includes("Failed") || result.message.includes("Error") || result.message.includes("Invalid"))) {
          toast({
           title: "Error",
           description: result.message,
@@ -63,113 +84,149 @@ export function AddExamDialog({ invigilatorOptions }: AddExamDialogProps) {
     });
   };
 
+  // Remove mapping logic for departmentOptions and roomOptions
+
+
+  const trigger = children ?? (
+    <Button size="sm" className="flex items-center gap-1">
+      <Plus className="h-4 w-4" />
+      <span className="hidden md:inline">Add Exam</span>
+    </Button>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) formRef.current?.reset();
+    }}>
       <DialogTrigger asChild>
-        <Button size="sm" className="flex items-center gap-1">
-          <Plus className="h-4 w-4" />
-          <span className="hidden md:inline">Add Exam</span>
-        </Button>
+        {trigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg"> {/* Increased width slightly */}
+      <DialogContent className="sm:max-w-2xl"> {/* Increased width */}
         <DialogHeader>
           <DialogTitle>Add New Exam</DialogTitle>
           <DialogDescription>Enter the details for the new exam. Click save when you're done.</DialogDescription>
         </DialogHeader>
-        {/* Use form action attribute */}
-        <form ref={formRef} action={handleSubmit} className="grid gap-4 py-4">
-            {/* Course Code */}
+        <form ref={formRef} action={handleSubmit} className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-6">
+            {/* Subject */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="courseCode" className="text-right">
-                Course Code
+              <Label htmlFor="subject" className="text-right">
+                Subject
               </Label>
-              <Input id="courseCode" name="courseCode" className="col-span-3" required />
+              <Input id="subject" name="subject" className="col-span-3" required />
             </div>
 
-            {/* Course Name */}
+            {/* Department */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="courseName" className="text-right">
-                Course Name
+              <Label htmlFor="departmentId" className="text-right">
+                Department
               </Label>
-              <Input id="courseName" name="courseName" className="col-span-3" required />
+               <Select name="departmentId" required>
+                  <SelectTrigger id="departmentId" className="col-span-3">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departmentOptions.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
             </div>
 
             {/* Date */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">
+              <Label htmlFor="examDate" className="text-right">
                 Date
               </Label>
-              <Input id="date" name="date" type="date" className="col-span-3" required />
+              <Input id="examDate" name="examDate" type="date" className="col-span-3" required />
             </div>
 
-            {/* Time */}
+            {/* Start Time */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="time" className="text-right">
-                Time (HH:MM AM/PM)
+              <Label htmlFor="startTime" className="text-right">
+                Start Time
               </Label>
-              {/* Use a single time input for simplicity, action expects specific format */}
-              <Input id="time" name="time" type="time" className="col-span-3" required placeholder="e.g., 09:00 AM" />
+              <Input id="startTime" name="startTime" type="time" className="col-span-3" required />
             </div>
 
-             {/* Duration */}
+             {/* End Time */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="duration" className="text-right">
-                Duration (min)
+              <Label htmlFor="endTime" className="text-right">
+                End Time
               </Label>
-              <Input id="duration" name="duration" type="number" className="col-span-3" required min="1" />
+              <Input id="endTime" name="endTime" type="time" className="col-span-3" required />
             </div>
 
-            {/* Room */}
+             {/* Difficulty (Optional) */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="room" className="text-right">
-                Room
+              <Label htmlFor="difficulty" className="text-right">
+                Difficulty
               </Label>
-              <Input id="room" name="room" className="col-span-3" required />
+              <Input id="difficulty" name="difficulty" type="number" min="1" max="5" placeholder="1-5 (Optional)" className="col-span-3" />
             </div>
 
-             {/* Department */}
+             {/* Coefficient (Optional) */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="department" className="text-right">
-                Department
+              <Label htmlFor="coefficient" className="text-right">
+                Coefficient
               </Label>
-              {/* Consider making this a Select if departments are predefined */}
-              <Input id="department" name="department" className="col-span-3" required />
+              <Input id="coefficient" name="coefficient" type="number" min="0" placeholder="Optional" className="col-span-3" />
             </div>
 
-            {/* Invigilators (Single Select for now) */}
-            {/* TODO: Implement multi-select later if needed */}
+             {/* Rooms (Multi-select Checkboxes) */}
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label className="text-right pt-2">
+                Rooms
+              </Label>
+              <ScrollArea className="col-span-3 h-32 rounded-md border p-2">
+                 {roomOptions.length === 0 ? (
+                     <p className="text-sm text-muted-foreground text-center py-4">No rooms available</p>
+                 ) : (
+                    roomOptions.map(opt => (
+                        <div key={opt.value} className="flex items-center space-x-2 mb-2">
+                            <Checkbox id={`room-${opt.value}`} name="roomIds" value={opt.value} />
+                            <Label htmlFor={`room-${opt.value}`} className="font-normal">{opt.label}</Label>
+                        </div>
+                    ))
+                 )}
+              </ScrollArea>
+            </div>
+
+            {/* Invigilators (Multi-select Checkboxes) */}
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label className="text-right pt-2">
+                Invigilators
+              </Label>
+               <ScrollArea className="col-span-3 h-32 rounded-md border p-2">
+                 {invigilatorOptions.length === 0 ? (
+                     <p className="text-sm text-muted-foreground text-center py-4">No invigilators available</p>
+                 ) : (
+                    invigilatorOptions.map(opt => (
+                        <div key={opt.value} className="flex items-center space-x-2 mb-2">
+                            <Checkbox id={`invigilator-${opt.value}`} name="invigilatorUserIds" value={opt.value} />
+                            <Label htmlFor={`invigilator-${opt.value}`} className="font-normal">{opt.label}</Label>
+                        </div>
+                    ))
+                 )}
+              </ScrollArea>
+            </div>
+
+             {/* Is Duplicate (Optional Checkbox) */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="invigilators" className="text-right">
-                Invigilator(s)
-              </Label>
-              <div className="col-span-3">
-                 <Select name="invigilators" required>
-                  <SelectTrigger id="invigilators">
-                    <SelectValue placeholder="Select invigilator" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {/* Removed the explicit "Loading..." item which caused the error */}
-                    {invigilatorOptions.length === 0 ? (
-                         <div className="px-2 py-1.5 text-sm text-muted-foreground text-center">No invigilators found</div>
-                    ) : (
-                        invigilatorOptions.map(opt => (
-                            // Ensure opt.value is never an empty string if data source could provide it
-                            opt.value ? <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem> : null
-                        ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">Multi-select coming soon.</p>
-              </div>
+               <Label htmlFor="isDuplicate" className="text-right">Duplicate?</Label>
+               <div className="col-span-3 flex items-center">
+                 <Checkbox id="isDuplicate" name="isDuplicate" />
+                 <span className="ml-2 text-sm text-muted-foreground">Is this a duplicated session?</span>
+               </div>
             </div>
 
-          <DialogFooter>
+          <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t">
              <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
              </DialogClose>
             <Button type="submit" disabled={isPending}>
               {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Save
+              Save Exam
             </Button>
           </DialogFooter>
         </form>

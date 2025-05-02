@@ -4,10 +4,11 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Users, LogOut, Menu, Home, User, Bell, BarChart } from "lucide-react"
+import { Calendar, Users, LogOut, Menu, Home, User, Bell, BarChart, Building2, DoorOpen } from "lucide-react" // Added Building2, DoorOpen
 import { useState, useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator" // Import Separator
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { NotificationsPopover } from "@/components/notifications-popover"
@@ -106,6 +107,28 @@ export function AdminLayout({ children, notifications }: AdminLayoutProps) { // 
                       Invigilators
                     </Link>
                   </Button>
+                  {/* Add Departments Link - Mobile */}
+                  <Button
+                    variant={pathname.includes("/admin/departments") ? "secondary" : "ghost"}
+                    className="justify-start"
+                    asChild
+                  >
+                    <Link href="/admin/departments">
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Departments
+                    </Link>
+                  </Button>
+                  {/* Add Rooms Link - Mobile */}
+                  <Button
+                    variant={pathname.includes("/admin/rooms") ? "secondary" : "ghost"}
+                    className="justify-start"
+                    asChild
+                  >
+                    <Link href="/admin/rooms">
+                      <DoorOpen className="mr-2 h-4 w-4" />
+                      Rooms
+                    </Link>
+                  </Button>
                   <Button
                     variant={pathname.includes("/admin/reports") ? "secondary" : "ghost"}
                     className="justify-start"
@@ -153,10 +176,11 @@ export function AdminLayout({ children, notifications }: AdminLayoutProps) { // 
       <div className="flex flex-1 flex-row">
         {/* Sidebar (desktop) - Fixed position */}
         <aside className="hidden lg:flex lg:flex-col fixed left-0 top-0 bottom-0 w-64 border-r bg-white z-10 overflow-y-auto">
-          <div className="flex h-14 items-center border-b px-4">
+          <div className="flex h-14 flex-col justify-center px-4"> {/* Remove border-b, adjust flex for separator */}
             <h2 className="text-lg font-semibold">Admin Panel</h2>
+            <Separator className="my-2" /> {/* Add Separator */}
           </div>
-          <div className="flex flex-1 flex-col gap-6 p-4">
+          <div className="flex flex-1 flex-col gap-6 p-4 pt-0"> {/* Adjust padding-top */}
             <nav className="flex flex-col gap-1">
               <Button variant={pathname === "/admin" ? "secondary" : "ghost"} className="justify-start" asChild>
                 <Link href="/admin">
@@ -204,6 +228,28 @@ export function AdminLayout({ children, notifications }: AdminLayoutProps) { // 
                   Invigilators
                 </Link>
               </Button>
+              {/* Add Departments Link - Desktop */}
+               <Button
+                variant={pathname.includes("/admin/departments") ? "secondary" : "ghost"}
+                className="justify-start"
+                asChild
+              >
+                <Link href="/admin/departments">
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Departments
+                </Link>
+              </Button>
+              {/* Add Rooms Link - Desktop */}
+              <Button
+                variant={pathname.includes("/admin/rooms") ? "secondary" : "ghost"}
+                className="justify-start"
+                asChild
+              >
+                <Link href="/admin/rooms">
+                  <DoorOpen className="mr-2 h-4 w-4" />
+                  Rooms
+                </Link>
+              </Button>
               <Button
                 variant={pathname.includes("/admin/reports") ? "secondary" : "ghost"}
                 className="justify-start"
@@ -232,8 +278,9 @@ export function AdminLayout({ children, notifications }: AdminLayoutProps) { // 
           </div>
         </aside>
 
-        {/* Main content - With padding to account for fixed sidebar */}
-        <main className="flex-1 lg:ml-64">{children}</main>
+        {/* Main content - Restoring wrapper with only flex and margin for testing */}
+        {/* Main content - Restoring original intended classes */}
+        <main className="flex-1 flex flex-col h-full px-4 md:px-6 lg:ml-64 lg:pl-0">{children}</main>
       </div>
     </div>
   )

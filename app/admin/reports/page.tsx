@@ -55,14 +55,17 @@ export default async function ReportsPage() {
   return (
     // Pass notifications to the layout
     <AdminLayout notifications={notifications}>
-      <div className="flex flex-col h-full">
+      {/* Apply the consistent wrapper class */}
+      <div className="space-y-6">
         {/* Header - Removed period select and client-side export button */}
-        <div className="flex flex-col xs:flex-row items-center justify-between py-4 border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 px-4 md:px-6">
+        {/* Remove horizontal padding (px-4 md:px-6) */}
+        <div className="flex flex-col xs:flex-row items-center justify-between py-4 border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
           <h1 className="text-xl xs:text-2xl font-semibold mb-2 xs:mb-0">Reports & Analytics</h1>
           {/* Add server-side export options later if needed */}
         </div>
 
-        <div className="p-4 md:p-6">
+        {/* Remove padding (p-4 md:p-6) from this wrapper div */}
+        <div>
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList className="flex flex-wrap h-auto"> {/* Allow wrapping */}
               <TabsTrigger value="overview" className="flex items-center gap-2">

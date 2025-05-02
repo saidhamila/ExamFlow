@@ -1,135 +1,120 @@
 "use client"
 
 import { useState, useEffect, useTransition } from "react"
-import { Filter, Download, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { Filter, Download, ChevronLeft, ChevronRight, Loader2, Copy } from "lucide-react" // Added Copy icon
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input" // Added Input import
 import { AddExamDialog } from "@/components/add-exam-dialog"
 import { EditExamDialog } from "@/components/edit-exam-dialog"
 import { DeleteExamDialog } from "@/components/delete-exam-dialog"
 import { useToast } from "@/hooks/use-toast"
-import type { Exam, Invigilator } from "@/lib/data" // Import types
-import { deleteExamAction, getInvigilatorOptionsAction } from "@/lib/actions" // Import server actions
+import type { ExamWithDetails, PaginatedExamsResult, ExamFilters, PaginationOptions } from "@/lib/data" // Import detailed Exam type AND pagination/filter types
+import { deleteExamAction, duplicateExamAction, getFilteredPaginatedExamsAction } from "@/lib/actions" // Added duplicateExamAction AND the new fetch action
+// Remove useSessionData import
 
 // Define props for the client component
+// Define a shared Option type if not already available globally
+type Option = { value: string; label: string };
+
 interface ExamTableClientProps {
-  initialExams: Exam[];
-  // We might pass invigilator options fetched on the server later
+  initialPaginatedExams: PaginatedExamsResult; // Expect paginated result
+  departmentOptions: Option[]; // Add back prop
+  roomOptions: Option[]; // Add back prop
+  invigilatorOptions: Option[];
 }
 
 import { format } from 'date-fns'; // Import date-fns format function
 
 // Remove the old formatDate helper
 
-export function ExamTableClient({ initialExams }: ExamTableClientProps) {
+export function ExamTableClient({
+    initialPaginatedExams, // Use initial paginated data
+    departmentOptions, // Add back prop
+    roomOptions, // Add back prop
+    invigilatorOptions
+}: ExamTableClientProps) {
+  // Remove useSessionData hook call
   const { toast } = useToast()
-  const [isPending, startTransition] = useTransition(); // For delete action loading state
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const [isDuplicating, startDuplicateTransition] = useTransition();
+  const [isFetching, startFetchingTransition] = useTransition(); // Loading state for fetching
 
-  // State for exams (initial + filtered)
-  const [exams, setExams] = useState(initialExams) // Keep original list if needed, maybe remove later
-  const [filteredExams, setFilteredExams] = useState(initialExams)
+  // State for exams displayed in the table
+  const [exams, setExams] = useState<ExamWithDetails[]>(initialPaginatedExams.exams);
+
+  // State for pagination
+  const [currentPage, setCurrentPage] = useState(initialPaginatedExams.currentPage);
+  const [totalPages, setTotalPages] = useState(initialPaginatedExams.totalPages);
+  const [itemsPerPage, setItemsPerPage] = useState(10); // Default items per page
 
   // State for filters
-  const [filters, setFilters] = useState({
-    subject: "all", // Use courseName or courseCode? Let's use courseName for now
+  const [filters, setFilters] = useState<ExamFilters>({ // Use ExamFilters type
+    subject: "all",
     dateRange: "all",
-    invigilator: "all", // This should filter by invigilator ID eventually
+    departmentId: "all",
+    roomId: "all",
+    invigilatorId: "all",
   })
 
-  // State for invigilator options (fetched from server action)
-  const [invigilatorOptions, setInvigilatorOptions] = useState<{ value: string; label: string }[]>([]);
-
-  // Fetch invigilator options on component mount
-  useEffect(() => {
-    getInvigilatorOptionsAction().then(options => {
-      setInvigilatorOptions(options);
-    });
-  }, []);
+  // No need to fetch options internally anymore
 
 
-  // Update filtered list when initialExams prop changes (e.g., after add/update)
-  // This might not be needed if revalidation works correctly, but can be a fallback
-  useEffect(() => {
-    setExams(initialExams);
-    applyFilters(filters, initialExams); // Re-apply filters when initial data changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialExams]); // Dependency on initialExams
-
-  const handleFilterChange = (filterType: keyof typeof filters, value: string) => {
-    const newFilters = { ...filters, [filterType]: value }
-    setFilters(newFilters)
-    applyFilters(newFilters, exams) // Apply filters to the current full list
-  }
-
-  // Apply filters to a given list of exams
-  const applyFilters = (currentFilters: typeof filters, sourceExams: Exam[]) => {
-    let result = [...sourceExams]
-
-    // Apply subject (courseName) filter
-    if (currentFilters.subject !== "all") {
-      result = result.filter((exam) => exam.courseName === currentFilters.subject)
-    }
-
-    // Apply date range filter
-    if (currentFilters.dateRange !== "all") {
-      const today = new Date(); today.setHours(0,0,0,0); // Start of today
-      const endOfToday = new Date(); endOfToday.setHours(23,59,59,999); // End of today
-
-      const endOfWeek = new Date(today);
-      endOfWeek.setDate(today.getDate() + (6 - today.getDay()) + 1); // End of current week (Sunday)
-      endOfWeek.setHours(23,59,59,999);
-
-      const endOfNextWeek = new Date(endOfWeek);
-      endOfNextWeek.setDate(endOfWeek.getDate() + 7);
-
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
-      endOfMonth.setHours(23,59,59,999);
-
-
-      switch (currentFilters.dateRange) {
-        case "this-week":
-          result = result.filter((exam) => {
-            // Use dateTime directly
-            const examDate = exam.dateTime;
-            return examDate >= today && examDate <= endOfWeek
-          })
-          break
-        case "next-week":
-           result = result.filter((exam) => {
-            // Use dateTime directly
-            const examDate = exam.dateTime;
-            return examDate > endOfWeek && examDate <= endOfNextWeek
-          })
-          break
-        case "this-month":
-          result = result.filter((exam) => {
-            // Use dateTime directly
-            const examDate = exam.dateTime;
-            return examDate >= today && examDate <= endOfMonth
-          })
-          break
+  // Function to fetch exams based on current state
+  const fetchExams = () => {
+    startFetchingTransition(async () => {
+      const paginationOptions: PaginationOptions = { page: currentPage, limit: itemsPerPage };
+      const result = await getFilteredPaginatedExamsAction(filters, paginationOptions);
+      setExams(result.exams);
+      setTotalPages(result.totalPages);
+      // Ensure currentPage is updated if it was out of bounds after filtering/deletion
+      if (result.currentPage !== currentPage) {
+          setCurrentPage(result.currentPage);
       }
-    }
+    });
+  };
 
-    // Apply invigilator filter (by ID)
-    if (currentFilters.invigilator !== "all") {
-      // Filter based on invigilator ID within the invigilators array
-      result = result.filter((exam) => exam.invigilators.some(inv => inv.id === currentFilters.invigilator))
-    }
+  // Fetch data when filters or pagination change
+  useEffect(() => {
+    fetchExams();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, currentPage, itemsPerPage]); // Re-fetch when these change
 
-    setFilteredExams(result)
-  }
+  // Update initial state if the prop changes (e.g., after server-side revalidation on add/delete)
+   useEffect(() => {
+    setExams(initialPaginatedExams.exams);
+    setCurrentPage(initialPaginatedExams.currentPage);
+    setTotalPages(initialPaginatedExams.totalPages);
+  }, [initialPaginatedExams]);
+
+
+  // Handlers for filter and pagination changes
+  const handleFilterChange = (filterType: keyof ExamFilters, value: string) => {
+    setFilters(prevFilters => ({ ...prevFilters, [filterType]: value }));
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(parseInt(value, 10));
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   // --- CRUD Handlers ---
   // Add/Update are handled directly by the dialogs calling server actions now
   // Delete needs a handler here to use startTransition
 
   const handleDeleteExam = (examId: string) => {
-    startTransition(async () => {
+    startDeleteTransition(async () => { // Use specific transition
       const result = await deleteExamAction(examId);
       if (result?.message) {
         toast({
@@ -137,29 +122,54 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
           description: result.message,
           variant: result.message.includes("success") ? "default" : "destructive",
         });
-        // Revalidation should update the list via the initialExams prop change
+        // Re-fetch data after successful delete
+        fetchExams();
       }
     });
+  };
+
+  // Handler for duplicating an exam
+  const handleDuplicateExam = (examId: string) => {
+      startDuplicateTransition(async () => {
+          const result = await duplicateExamAction(examId);
+          if (result?.success) {
+              toast({
+                  title: "Success",
+                  description: result.message,
+              });
+              // Re-fetch data after successful duplication
+              fetchExams();
+          } else {
+              toast({
+                  title: "Error Duplicating Exam",
+                  description: result?.message || "An unknown error occurred.",
+                  variant: "destructive",
+              });
+          }
+      });
   };
 
 
   const exportToCSV = () => {
     // Create CSV content
-    const headers = ["Date", "Time", "Duration (min)", "Room", "Course Code", "Course Name", "Department", "Invigilator IDs"]
+    const headers = ["ExamID", "Subject", "Department", "Date", "StartTime", "EndTime", "Rooms", "Invigilators"];
     const csvContent = [
       headers.join(","),
-      ...filteredExams.map((exam) =>
-        [
-          format(exam.dateTime, 'yyyy-MM-dd'), // Format date from dateTime
-          format(exam.dateTime, 'HH:mm'), // Format time from dateTime
-          exam.duration,
-          exam.room,
-          `"${exam.courseCode}"`,
-          `"${exam.courseName}"`,
-          `"${exam.department}"`,
-          `"${exam.invigilators.join(';')}"`, // Join IDs with semicolon
-        ].join(","),
-      ),
+      // Export currently displayed exams
+      ...exams.map((exam) => {
+          const roomNames = exam.examRooms.map(er => er.room?.roomName ?? 'N/A').join('; ');
+          const invigilatorNames = exam.invigilators.map(inv => inv.user?.name ?? inv.user?.email ?? 'N/A').join('; ');
+          return [
+              exam.examId,
+              `"${exam.subject}"`,
+              `"${exam.department?.name ?? 'N/A'}"`,
+              format(new Date(exam.examDate), 'yyyy-MM-dd'),
+              format(new Date(exam.startTime), 'HH:mm'),
+              format(new Date(exam.endTime), 'HH:mm'),
+              `"${roomNames}"`,
+              `"${invigilatorNames}"`,
+          ].join(",");
+      }),
     ].join("\n")
 
     // Create download link
@@ -180,16 +190,26 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
   }
 
   // Get unique subjects for filter dropdown
-  const subjectOptions = Array.from(new Set(initialExams.map(e => e.courseName)));
+  // Subject options might need to be fetched separately or passed down if they shouldn't depend on the current page's exams
+  // For now, derive from the current page's exams (might be incomplete)
+  const subjectOptions = Array.from(new Set(exams.map(e => e.subject)));
+
+  // Remove mapping logic for departmentOptions and roomOptions
 
   return (
-    <div className="flex flex-col h-full">
+    // Apply the consistent wrapper class
+    <div className="space-y-6">
       {/* Header with Add/Export buttons */}
-      <div className="flex flex-col xs:flex-row items-center justify-between py-4 border-b sticky top-0 bg-white z-10 px-4 md:px-6">
+      {/* Remove horizontal padding (px-4 md:px-6) */}
+      <div className="flex flex-col xs:flex-row items-center justify-between py-4 border-b sticky top-0 bg-white z-10">
         <h1 className="text-xl xs:text-2xl font-semibold mb-2 xs:mb-0">Exam Management</h1>
         <div className="flex items-center gap-2 w-full xs:w-auto justify-end">
-          {/* Pass invigilator options to Add dialog */}
-          <AddExamDialog invigilatorOptions={invigilatorOptions} />
+          {/* Pass props back to AddExamDialog */}
+          <AddExamDialog
+            departmentOptions={departmentOptions}
+            roomOptions={roomOptions}
+            invigilatorOptions={invigilatorOptions}
+          />
           <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={exportToCSV}>
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">Export CSV</span>
@@ -203,7 +223,8 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
       </div>
 
       {/* Filters and Table Card */}
-      <Card className="m-4 md:m-6">
+      {/* Remove margins (m-4 md:m-6) */}
+      <Card>
         <CardContent className="p-0">
           {/* Filters Section */}
           <div className="border-b p-4 space-y-4">
@@ -217,6 +238,7 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Subjects</SelectItem>
+                    {/* Use SelectItem for subjects */}
                     {subjectOptions.map(subject => (
                       <SelectItem key={subject} value={subject}>{subject}</SelectItem>
                     ))}
@@ -238,13 +260,40 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
                   </SelectContent>
                 </Select>
               </div>
+              {/* Department Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="department-filter">Department</Label>
+                <Select value={filters.departmentId} onValueChange={(value) => handleFilterChange("departmentId", value)}>
+                  <SelectTrigger id="department-filter">
+                    <SelectValue placeholder="All Departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    {departmentOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Room Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="room-filter">Room</Label>
+                <Select value={filters.roomId} onValueChange={(value) => handleFilterChange("roomId", value)}>
+                  <SelectTrigger id="room-filter">
+                    <SelectValue placeholder="All Rooms" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Rooms</SelectItem>
+                    {roomOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {/* Invigilator Filter */}
               <div className="space-y-2">
                 <Label htmlFor="invigilator-filter">Invigilator</Label>
-                <Select
-                  value={filters.invigilator}
-                  onValueChange={(value) => handleFilterChange("invigilator", value)}
-                >
+                <Select value={filters.invigilatorId} onValueChange={(value) => handleFilterChange("invigilatorId", value)}>
                   <SelectTrigger id="invigilator-filter">
                     <SelectValue placeholder="All Invigilators" />
                   </SelectTrigger>
@@ -265,41 +314,74 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="whitespace-nowrap">Date / Time</TableHead>
-                  <TableHead className="whitespace-nowrap hidden xs:table-cell">Room</TableHead>
-                  <TableHead className="whitespace-nowrap">Course</TableHead>
+                  <TableHead className="whitespace-nowrap">Subject / Dept</TableHead>
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">Rooms</TableHead>
                   <TableHead className="whitespace-nowrap hidden sm:table-cell">Invigilators</TableHead>
                   <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredExams.length > 0 ? (
-                  filteredExams.map((exam) => (
-                    <TableRow key={exam.id} className="hover:bg-muted/50 transition-colors">
+                {isFetching ? (
+                    <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                        </TableCell>
+                    </TableRow>
+                ) : exams.length > 0 ? (
+                  exams.map((exam) => (
+                    <TableRow key={exam.examId} className="hover:bg-muted/50 transition-colors">
                       <TableCell>
-                        {/* Format dateTime using date-fns */}
-                        <div className="font-medium">{format(exam.dateTime, 'PPP')}</div>
-                        <div className="text-sm text-muted-foreground">{format(exam.dateTime, 'p')} ({exam.duration} min)</div>
+                        {/* Format examDate and times */}
+                        <div className="font-medium">{format(new Date(exam.examDate), 'PPP')}</div>
+                        <div className="text-sm text-muted-foreground">
+                            {format(new Date(exam.startTime), 'p')} - {format(new Date(exam.endTime), 'p')}
+                        </div>
                       </TableCell>
-                      <TableCell className="hidden xs:table-cell">{exam.room}</TableCell>
                       <TableCell>
-                        <div className="font-medium">{exam.courseName}</div>
-                        <div className="text-sm text-muted-foreground">{exam.courseCode}</div>
-                        <div className="text-xs text-muted-foreground">{exam.department}</div>
+                        <div className="font-medium">{exam.subject}</div>
+                        <div className="text-xs text-muted-foreground">{exam.department?.name ?? 'N/A'}</div>
+                        {/* Show rooms/invigilators on smaller screens */}
+                        <div className="text-xs text-muted-foreground md:hidden mt-1">
+                            Rooms: {exam.examRooms.map(er => er.room?.roomName ?? '?').join(', ')}
+                        </div>
+                         <div className="text-xs text-muted-foreground sm:hidden mt-1">
+                            Invigilators: {exam.invigilators.map(inv => inv.user?.name ?? inv.user?.email ?? '?').join(', ')}
+                        </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
+                      <TableCell className="hidden md:table-cell text-xs">
+                        {exam.examRooms.map(er => er.room?.roomName ?? 'N/A').join(', ')}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs">
                         {/* Display invigilator names */}
-                        {exam.invigilators.map(inv => inv.name).join(', ')}
+                        {exam.invigilators.map(inv => inv.user?.name ?? inv.user?.email ?? 'N/A').join(', ')}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          {/* Pass invigilator options to Edit dialog */}
-                          <EditExamDialog exam={exam} invigilatorOptions={invigilatorOptions} />
-                          {/* Use the handler for delete */}
+                          {/* Pass props back to EditExamDialog */}
+                          <EditExamDialog
+                            exam={exam}
+                            departmentOptions={departmentOptions}
+                            roomOptions={roomOptions}
+                            invigilatorOptions={invigilatorOptions}
+                          />
+                          {/* Duplicate Button */}
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleDuplicateExam(exam.examId)}
+                            disabled={isDuplicating} // Disable while duplicating
+                            title="Duplicate Exam"
+                          >
+                            {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+                            <span className="sr-only">Duplicate</span>
+                          </Button>
+                          {/* Delete Button */}
                           <DeleteExamDialog
-                            examId={exam.id}
-                            examName={`${exam.courseCode} - ${exam.courseName}`}
-                            onDelete={() => handleDeleteExam(exam.id)}
-                            isDeleting={isPending} // Pass loading state
+                            examId={exam.examId}
+                            examName={exam.subject}
+                            onDelete={() => handleDeleteExam(exam.examId)}
+                            isDeleting={isDeleting} // Pass delete loading state
                           />
                         </div>
                       </TableCell>
@@ -307,8 +389,8 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      No exams found matching your filters.
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No exams found.
                     </TableCell>
                   </TableRow>
                 )}
@@ -319,7 +401,7 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
           {/* Pagination Section (Placeholder) */}
           <div className="flex flex-col xs:flex-row items-center justify-between p-4 border-t gap-4 xs:gap-2">
             <div className="flex items-center gap-2">
-              <Select defaultValue="10">
+              <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
                 <SelectTrigger className="w-[70px]">
                   <SelectValue placeholder="10" />
                 </SelectTrigger>
@@ -333,11 +415,23 @@ export function ExamTableClient({ initialExams }: ExamTableClientProps) {
               <span className="text-sm text-muted-foreground">items per page</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" disabled>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1 || isFetching}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm">Page 1 of 1</span> {/* Needs dynamic update */}
-              <Button variant="outline" size="icon" disabled>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages || isFetching}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

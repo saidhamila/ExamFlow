@@ -4,19 +4,24 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers'; // Import cookies for server-side use
 import { prisma } from '@/lib/db'; // Import prisma client
 import { getNotifications } from '@/lib/data'; // Import only getNotifications
+import { getPrioritizedNotifications } from '@/lib/actions'; // Import the new action
 import { AdminLayout } from '@/components/admin-layout'; // Import Admin layout
 import { UserLayout } from '@/components/user-layout';   // Import User layout
 import { ProfileClient } from '@/components/profile-client'; // Import the client component
+import type { UserRole } from '@prisma/client'; // Import UserRole enum
 
-// Define UserProfileData type locally as it was removed from lib/data.ts
+// Define UserProfileData type locally
 type UserProfileData = {
     id: string;
     name: string | null;
     email: string;
-    role: string; // Role enum will be fetched as string
+    role: UserRole; // Use the actual enum type
     createdAt: Date;
     updatedAt: Date;
 } | null;
+
+// Define the type expected by UserLayout's userRole prop
+type LayoutRole = 'ADMIN' | 'USER' | 'CHEF' | 'DIRECTEUR' | undefined;
 
 // Define getCurrentUser function locally within the Server Component
 async function getCurrentUser(): Promise<UserProfileData> {
@@ -30,14 +35,10 @@ async function getCurrentUser(): Promise<UserProfileData> {
       return null;
     }
 
-    // Potential failure point 1: JSON.parse
     const sessionData = JSON.parse(sessionCookie.value);
-    // ADD LOGGING HERE: Log the parsed data structure immediately
     console.log("Parsed session data (profile page):", JSON.stringify(sessionData));
 
-    // Potential failure point 2: Accessing userId
     const userId = sessionData?.userId;
-    // ADD LOGGING HERE: Log the extracted userId
     console.log(`Extracted userId from cookie (profile page): [${userId}]`);
 
     if (!userId) {
@@ -47,9 +48,9 @@ async function getCurrentUser(): Promise<UserProfileData> {
 
     console.log(`Fetching user data for ID: ${userId} (profile page)`);
     const user = await prisma.user.findUnique({
-      where: { userId: userId }, // Use the correct field name 'userId'
+      where: { userId: userId },
       select: {
-        userId: true, // Select the correct field name 'userId'
+        userId: true,
         name: true,
         email: true,
         role: true,
@@ -64,19 +65,17 @@ async function getCurrentUser(): Promise<UserProfileData> {
     }
 
     console.log(`Successfully fetched user: ${user.email} (profile page)`);
-    // Need to map the selected fields to the UserProfileData type structure
-    // The 'id' field in UserProfileData should map from 'userId'
+    // Map the selected fields to the UserProfileData type structure
     return {
-        id: user.userId, // Map userId to id
+        id: user.userId,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role, // Role is already the correct type from Prisma
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
     };
 
   } catch (error) {
-    // Log the specific error object encountered
     console.error("Error caught in getCurrentUser (profile page):", error);
     return null; // Returns null on ANY error in the try block
   }
@@ -86,11 +85,11 @@ async function getCurrentUser(): Promise<UserProfileData> {
 export default async function ProfilePage() {
   // Fetch user data and notifications in parallel
   const [userData, notifications] = await Promise.all([
-    getCurrentUser(), // Call the locally defined function
-    getNotifications()
+    getCurrentUser(),
+    // Replace getNotifications with getPrioritizedNotifications
+    getPrioritizedNotifications()
   ]);
 
-  // Log the fetched user data before checking
   console.log("User data fetched in ProfilePage:", JSON.stringify(userData, null, 2));
 
   // If no user data (not logged in or error fetching), redirect to login
@@ -99,17 +98,40 @@ export default async function ProfilePage() {
     redirect('/'); // Redirect to login page
   }
 
-  // Choose the layout based on the user's role
-  const Layout = userData.role === 'ADMIN' ? AdminLayout : UserLayout;
+  // Render the appropriate layout based on role
+  if (userData.role === 'ADMIN') {
+    return (
+      <AdminLayout notifications={notifications}>
+        <ProfileClient userData={userData} />
+      </AdminLayout>
+    );
+  } else {
+    // Map Prisma role to the role expected by UserLayout
+    let layoutRole: LayoutRole;
+    switch (userData.role) {
+      case 'CHEF':
+        layoutRole = 'CHEF';
+        break;
+      case 'DIRECTEUR':
+        layoutRole = 'DIRECTEUR';
+        break;
+      case 'ENSEIGNANT':
+      case 'ETUDIANT':
+      // Add other non-admin roles here if necessary
+        layoutRole = 'USER';
+        break;
+      default:
+        // Fallback or handle unexpected roles if needed
+        layoutRole = 'USER'; // Default to USER for safety
+        console.warn(`Unexpected user role "${userData.role}" encountered in profile page. Defaulting layout role to USER.`);
+    }
 
-  return (
-    // Pass notifications to the chosen layout
-    <Layout notifications={notifications}>
-      {/*
-        The header/title part is now handled by the respective layouts (AdminLayout/UserLayout).
-        We only need to render the client component responsible for the profile tabs/content.
-      */}
-      <ProfileClient userData={userData} />
-    </Layout>
-  );
+    // For USER, CHEF, DIRECTEUR roles (and mapped roles)
+    return (
+      // Pass the mapped layoutRole specifically to UserLayout
+      <UserLayout notifications={notifications} userRole={layoutRole}>
+        <ProfileClient userData={userData} />
+      </UserLayout>
+    );
+  }
 }

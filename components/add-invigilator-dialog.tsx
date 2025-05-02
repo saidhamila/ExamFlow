@@ -105,6 +105,13 @@ export function AddInvigilatorDialog() { // Remove props
               </Label>
               <Input id="phone" name="phone" type="tel" className="col-span-3" required />
             </div>
+{/* Password */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="password" className="text-right">
+                Password
+              </Label>
+              <Input id="password" name="password" type="password" className="col-span-3" required />
+            </div>
             {/* Department */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">

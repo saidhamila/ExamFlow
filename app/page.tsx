@@ -1,3 +1,5 @@
+// Remove "use client" directive
+
 import Image from "next/image"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -5,11 +7,12 @@ import { cookies as nextCookies } from "next/headers"
 import type { ResponseCookies } from "next/dist/server/web/spec-extension/cookies"
 import { prisma } from "@/lib/db" // Import Prisma client
 import bcrypt from "bcryptjs" // Import bcryptjs
+// Remove getNotifications, getDepartments, getRooms imports
+// Remove useFormStatus import
 
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+// Remove Button, Input, Label imports as they are now in LoginForm
+import { LoginForm } from "@/components/login-form"; // Import the new LoginForm component
 
 export default function LoginPage() {
   async function handleLogin(formData: FormData) {
@@ -47,11 +50,16 @@ export default function LoginPage() {
         return; // Exit if password doesn't match
       }
 
-      // --- Login Success: Set Cookie ---
+      // --- Login Success: Set Simple Cookie ---
       console.log(`Login successful for: ${email}, Role: ${user.role}`);
       const cookieStore = await nextCookies() as unknown as ResponseCookies;
-      // Use the correct userId field from the user object
-      cookieStore.set("auth-session", JSON.stringify({ userId: user.userId, email: user.email, role: user.role }), {
+      // Store only essential user info
+      const sessionPayload = {
+        userId: user.userId,
+        email: user.email,
+        role: user.role,
+      };
+      cookieStore.set("auth-session", JSON.stringify(sessionPayload), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge: 60 * 60 * 24, // 1 day
@@ -79,6 +87,8 @@ export default function LoginPage() {
     }
   }
 
+  // Remove the LoginButton component definition
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -95,40 +105,8 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold text-center">Exam Schedule System</h1>
         </CardHeader>
         <CardContent>
-          <form action={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <div className="relative" suppressHydrationWarning={true}>
-                <Input id="email" name="email" type="email" className="peer h-12 pt-4 px-3" placeholder=" " required />
-                <Label
-                  htmlFor="email"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-focus:top-3 peer-focus:text-xs peer-focus:text-primary peer-[:not(:placeholder-shown)]:top-3 peer-[:not(:placeholder-shown)]:text-xs"
-                >
-                  Email
-                </Label>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  className="peer h-12 pt-4 px-3"
-                  placeholder=" "
-                  required
-                />
-                <Label
-                  htmlFor="password"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 transition-all peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-focus:top-3 peer-focus:text-xs peer-focus:text-primary peer-[:not(:placeholder-shown)]:top-3 peer-[:not(:placeholder-shown)]:text-xs"
-                >
-                  Password
-                </Label>
-              </div>
-            </div>
-            <Button type="submit" className="w-full h-12">
-              Login
-            </Button>
-          </form>
+          {/* Use the LoginForm component and pass the server action */}
+          <LoginForm handleLogin={handleLogin} />
         </CardContent>
         <CardFooter className="flex flex-col items-center gap-2 pb-8"> {/* Use flex-col and gap */}
           <Link href="#" className="text-sm text-gray-500 hover:text-primary">

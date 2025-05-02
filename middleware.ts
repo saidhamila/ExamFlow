@@ -1,17 +1,26 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
+// Remove Notification import if no longer needed here
 
 // Define the shape of the session data stored in the cookie
 // Use uppercase roles matching Prisma schema
 interface AuthSession {
-  userId: string; // Include userId for potential future use
+  userId: string;
   email: string;
-  role: 'ADMIN' | 'USER';
+  role: 'ADMIN' | 'USER' | 'CHEF' | 'DIRECTEUR';
+  // Remove cached data fields
 }
 
 // List of routes that require authentication
-const protectedRoutes = ['/admin', '/schedule', '/profile', '/notifications'];
+const protectedRoutes = [
+    '/admin',
+    '/schedule',
+    '/profile',
+    '/notifications',
+    '/chef/dashboard',
+    '/directeur/dashboard'
+];
 
 // Middleware needs to be async to await cookies
 export async function middleware(request: NextRequest) {
@@ -41,6 +50,18 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/schedule', request.url));
       }
 
+      // Check Chef route access
+      if (pathname.startsWith('/chef/dashboard') && sessionData.role !== 'CHEF') {
+        console.warn(`User ${sessionData.email} (role: ${sessionData.role}) attempted to access chef route: ${pathname}`);
+        return NextResponse.redirect(new URL('/schedule', request.url)); // Redirect non-chefs
+      }
+
+      // Check Directeur route access
+      if (pathname.startsWith('/directeur/dashboard') && sessionData.role !== 'DIRECTEUR') {
+        console.warn(`User ${sessionData.email} (role: ${sessionData.role}) attempted to access directeur route: ${pathname}`);
+        return NextResponse.redirect(new URL('/schedule', request.url)); // Redirect non-directeurs
+      }
+
       // User is authenticated and has correct role (or route is not admin-specific)
       return NextResponse.next();
 
@@ -59,7 +80,15 @@ export async function middleware(request: NextRequest) {
     try {
       const sessionData = JSON.parse(sessionCookie.value) as AuthSession;
       // Redirect logged-in users away from login page to their dashboard using uppercase role
-      const redirectUrl = sessionData.role === 'ADMIN' ? '/admin' : '/schedule';
+      let redirectUrl = '/schedule'; // Default redirect
+      if (sessionData.role === 'ADMIN') {
+          redirectUrl = '/admin';
+      } else if (sessionData.role === 'CHEF') {
+          redirectUrl = '/chef/dashboard';
+      } else if (sessionData.role === 'DIRECTEUR') {
+          redirectUrl = '/directeur/dashboard';
+      }
+      // USER role will default to /schedule
       return NextResponse.redirect(new URL(redirectUrl, request.url));
     } catch (error) {
       // Invalid cookie, let them stay on login page
