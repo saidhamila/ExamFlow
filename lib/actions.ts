@@ -335,6 +335,169 @@ export async function deleteUserAction(userId: string) {
     revalidatePath("/admin/invigilators"); // Path might need update
     return { message: "User deleted successfully." };
 }
+// --- Student Schema ---
+// Combines User fields and Student profile fields
+const StudentSchema = z.object({
+    userId: z.string().optional(), // Optional for add
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters").optional(), // Required for add, optional for update
+    program: z.string().min(1, "Program is required").optional(), // Optional for initial creation? Or required? Let's make it optional for now.
+    isActive: z.boolean().optional(), // For user status
+});
+
+// Schema for adding a student (requires password)
+const AddStudentSchema = StudentSchema.extend({
+    password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+// Schema for updating a student (password is optional)
+const UpdateStudentSchema = StudentSchema.omit({ password: true }).extend({
+    password: z.string().min(6).optional(), // Allow optional password update
+});
+
+
+// --- Student Server Actions ---
+
+export async function addStudentAction(formData: FormData) {
+    const dataToValidate = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        program: formData.get('program'),
+    };
+
+    const validatedFields = AddStudentSchema.safeParse(dataToValidate);
+
+    if (!validatedFields.success) {
+        console.error("Validation Error (Add Student):", validatedFields.error.flatten().fieldErrors);
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: "Validation failed. Could not add student.",
+        };
+    }
+
+    try {
+        // Hash the password before sending to data layer
+        const hashedPassword = await bcrypt.hash(validatedFields.data.password, 10);
+
+        // TODO: Implement addStudent in lib/data.ts
+        // This function should create both User and Student records in a transaction
+        await prisma.$transaction(async (tx) => {
+             const newUser = await tx.user.create({
+                data: {
+                    name: validatedFields.data.name,
+                    email: validatedFields.data.email,
+                    password: hashedPassword,
+                    role: UserRole.ETUDIANT, // Set role to ETUDIANT
+                }
+             });
+             if (validatedFields.data.program) {
+                 await tx.student.create({
+                    data: {
+                        userId: newUser.userId,
+                        program: validatedFields.data.program,
+                    }
+                 });
+             }
+        });
+
+    } catch (error) {
+        console.error("Database Error (Add Student):", error);
+        if (error instanceof Error && error.message.includes('Unique constraint failed on the fields: (`email`)')) {
+             return { message: "Database error: Email already exists." };
+        }
+        return { message: error instanceof Error ? error.message : "Database error. Failed to add student." };
+    }
+
+    revalidatePath("/admin/students");
+    return { message: "Student added successfully." };
+}
+
+export async function updateStudentAction(userId: string, formData: FormData) {
+    const dataToValidate = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        program: formData.get('program'),
+        isActive: formData.get('isActive') === 'on',
+        // Password update is handled separately if needed
+    };
+
+     // Validate against the update schema (password omitted here)
+    const validatedFields = UpdateStudentSchema.omit({ password: true }).safeParse(dataToValidate);
+
+     if (!validatedFields.success) {
+        console.error("Validation Error (Update Student):", validatedFields.error.flatten().fieldErrors);
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: "Validation failed. Could not update student.",
+        };
+    }
+
+    try {
+        // TODO: Implement updateStudent in lib/data.ts
+        // This function should update User and Student records in a transaction
+        await prisma.$transaction(async (tx) => {
+            await tx.user.update({
+                where: { userId: userId },
+                data: {
+                    name: validatedFields.data.name,
+                    email: validatedFields.data.email,
+                    isActive: validatedFields.data.isActive,
+                }
+            });
+            // Update student profile if it exists, otherwise create it? Or handle separately?
+            // For now, let's update if program is provided
+            if (validatedFields.data.program) {
+                await tx.student.upsert({
+                    where: { userId: userId },
+                    update: { program: validatedFields.data.program },
+                    create: { userId: userId, program: validatedFields.data.program }
+                });
+            }
+        });
+
+    } catch (error) {
+        console.error("Database Error (Update Student):", error);
+         if (error instanceof Error && error.message.includes('Unique constraint failed on the fields: (`email`)')) {
+             return { message: "Database error: Email already exists." };
+        }
+        return { message: error instanceof Error ? error.message : "Database error. Failed to update student." };
+    }
+
+    revalidatePath("/admin/students");
+    revalidatePath(`/admin/students/${userId}`); // Assuming a detail page might exist
+    return { message: "Student updated successfully." };
+}
+
+
+export async function deleteStudentAction(userId: string) {
+    if (!userId) {
+        return { message: "Invalid Student User ID." };
+    }
+    try {
+        // TODO: Implement deleteStudent in lib/data.ts
+        // This function should delete Student and User records in a transaction
+        // Ensure cascade delete is set up correctly in schema or handle manually
+        // Prisma schema has cascade delete on ExamStudent -> Student, but not User -> Student
+        // We need to delete Student first, then User.
+         await prisma.$transaction(async (tx) => {
+            // Delete related ExamStudent entries first (if any) - handled by cascade on ExamStudent->Student
+            // Delete Student profile
+            await tx.student.deleteMany({ where: { userId: userId } });
+            // Delete User
+            await tx.user.delete({ where: { userId: userId } });
+         });
+
+    } catch (error) {
+        console.error("Database Error (Delete Student):", error);
+        // Handle potential foreign key constraint errors if cascade isn't perfect
+        return { message: error instanceof Error ? error.message : "Database error. Failed to delete student." };
+    }
+
+    revalidatePath("/admin/students");
+    return { message: "Student deleted successfully." };
+}
 // --- Department Schema ---
 const DepartmentSchema = z.object({
     departmentId: z.string().optional(), // Optional for add
@@ -510,6 +673,114 @@ export async function updateRoomAction(roomId: string, formData: FormData) {
 
     // Validate (omit roomId)
     const validatedFields = RoomSchema.omit({ roomId: true }).safeParse(dataToValidate);
+// --- Exam Enrollment Actions ---
+
+const EnrollSchema = z.object({
+    examId: z.string().min(1),
+    studentId: z.string().min(1),
+});
+
+export async function enrollStudentAction(formData: FormData) {
+    const validatedFields = EnrollSchema.safeParse({
+        examId: formData.get('examId'),
+        studentId: formData.get('studentId'),
+    });
+
+    if (!validatedFields.success) {
+        console.error("Validation Error (Enroll Student):", validatedFields.error.flatten().fieldErrors);
+        return { message: "Invalid data provided." };
+    }
+
+    const { examId, studentId } = validatedFields.data;
+
+    try {
+        // Check if student exists and has the ETUDIANT role (optional but good practice)
+        const studentUser = await prisma.user.findUnique({
+            where: { userId: studentId, role: UserRole.ETUDIANT },
+        });
+        if (!studentUser) {
+            return { message: "Student not found or is not a valid student." };
+        }
+
+        // Create the enrollment record
+        await prisma.examStudent.create({
+            data: {
+                examId: examId,
+                studentId: studentId, // This should be the Student profile ID, not the User ID directly!
+                                      // We need to fetch the Student profile ID based on the User ID.
+                                      // Let's adjust the logic. Assume studentId passed is the USER ID for selection.
+            }
+        });
+
+         // Refetch Student ID based on User ID
+         const studentProfile = await prisma.student.findUnique({
+            where: { userId: studentId },
+            select: { studentId: true }
+         });
+
+         if (!studentProfile) {
+             return { message: "Student profile not found for the selected user." };
+         }
+
+         await prisma.examStudent.upsert({ // Use upsert to avoid duplicates
+            where: { examId_studentId: { examId: examId, studentId: studentProfile.studentId } },
+            update: {}, // No update needed if exists
+            create: {
+                examId: examId,
+                studentId: studentProfile.studentId, // Use the actual Student profile ID
+                status: 'INSCRIT' // Default status
+            }
+        });
+
+
+    } catch (error) {
+        console.error("Database Error (Enroll Student):", error);
+         if (error instanceof Error && error.message.includes('Unique constraint failed')) {
+             // This case should be handled by upsert now, but kept for safety
+             return { message: "Student already enrolled in this exam." };
+         }
+        return { message: "Database error. Failed to enroll student." };
+    }
+
+    revalidatePath(`/admin/exams/${examId}`); // Revalidate the specific exam page
+    return { message: "Student enrolled successfully." };
+}
+
+
+export async function unenrollStudentAction(formData: FormData) {
+     const validatedFields = EnrollSchema.safeParse({ // Same schema works
+        examId: formData.get('examId'),
+        studentId: formData.get('studentId'), // This is the Student profile ID from the list
+    });
+
+     if (!validatedFields.success) {
+        console.error("Validation Error (Unenroll Student):", validatedFields.error.flatten().fieldErrors);
+        return { message: "Invalid data provided." };
+    }
+
+    const { examId, studentId } = validatedFields.data; // studentId here IS the Student profile ID
+
+    try {
+        await prisma.examStudent.delete({
+            where: {
+                examId_studentId: { // Use the compound unique key
+                    examId: examId,
+                    studentId: studentId,
+                }
+            }
+        });
+    } catch (error) {
+         console.error("Database Error (Unenroll Student):", error);
+         // Handle case where record might not exist (e.g., already deleted)
+         if (error instanceof Error && (error as any).code === 'P2025') { // Prisma error code for record not found
+             return { message: "Enrollment record not found." };
+         }
+         return { message: "Database error. Failed to unenroll student." };
+    }
+
+    revalidatePath(`/admin/exams/${examId}`); // Revalidate the specific exam page
+    return { message: "Student unenrolled successfully." };
+}
 
      if (!validatedFields.success) {
         console.error("Validation Error (Update Room):", validatedFields.error.flatten().fieldErrors);

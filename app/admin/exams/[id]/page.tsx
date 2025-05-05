@@ -12,19 +12,24 @@ import { DeleteExamDialog } from "@/components/delete-exam-dialog"
 import { EditExamDialog } from "@/components/edit-exam-dialog"
 // Import data fetching functions and actions
 import { getExamById, getNotifications } from "@/lib/data"
-import { getInvigilatorOptionsAction } from "@/lib/actions" // Correct import path
-import type { Invigilator } from "@prisma/client" // Import Invigilator type
+import { getInvigilatorOptionsAction, getDepartmentOptionsAction, getRoomOptionsAction } from "@/lib/actions" // Add department/room options actions
+// Import the detailed type from data.ts
+import type { ExamWithDetails } from "@/lib/data";
+// Import necessary Prisma types for clarity if needed elsewhere, but ExamWithDetails should suffice
+import type { Invigilator as PrismaInvigilatorAssignment, User as PrismaUser, Room as PrismaRoom } from "@prisma/client";
 
 // Remove mock data
 
 // Make component async
 export default async function ExamDetailsPage({ params }: { params: { id: string } }) {
 
-  // Fetch exam details, notifications, and invigilator options in parallel
-  const [exam, notifications, invigilatorOptions] = await Promise.all([
+  // Fetch exam details, notifications, and options in parallel
+  const [exam, notifications, invigilatorOptions, departmentOptions, roomOptions] = await Promise.all([
     getExamById(params.id),
     getNotifications(),
-    getInvigilatorOptionsAction() // Fetch options needed for EditExamDialog
+    getInvigilatorOptionsAction(), // Fetch invigilator options
+    getDepartmentOptionsAction(), // Fetch department options
+    getRoomOptionsAction()      // Fetch room options
   ]);
 
   // Handle exam not found
@@ -32,14 +37,23 @@ export default async function ExamDetailsPage({ params }: { params: { id: string
     notFound(); // Render 404 page
   }
 
-  // Determine status based on dateTime (example logic)
+  // Determine status based on examDate, startTime, endTime
   const now = new Date();
-  const examEndTime = new Date(exam.dateTime.getTime() + exam.duration * 60000);
-  let status = "Scheduled";
-  if (examEndTime < now) {
-    status = "Completed";
-  } else if (exam.dateTime <= now && examEndTime >= now) {
-    status = "Ongoing";
+  // Ensure startTime and endTime are valid Date objects
+  const examStartDateTime = exam.startTime ? new Date(exam.startTime) : null;
+  const examEndDateTime = exam.endTime ? new Date(exam.endTime) : null;
+
+  let status = "Scheduled"; // Default status
+  if (examStartDateTime && examEndDateTime) {
+      if (examEndDateTime < now) {
+          status = "Completed";
+      } else if (examStartDateTime <= now && examEndDateTime >= now) {
+          status = "Ongoing";
+      }
+      // Otherwise, it remains "Scheduled"
+  } else {
+      // Handle cases where start/end time might be missing if schema allows nulls
+      status = "Time Unknown"; // Or some other indicator
   }
 
   return (
@@ -56,9 +70,14 @@ export default async function ExamDetailsPage({ params }: { params: { id: string
             <h1 className="text-2xl font-semibold">Exam Details</h1>
           </div>
           <div className="flex items-center gap-2">
-            {/* Pass real exam data and invigilator options to dialogs */}
-            <EditExamDialog exam={exam} invigilatorOptions={invigilatorOptions} />
-            {/* Temporarily comment out DeleteExamDialog as it requires client-side state/callbacks */}
+            {/* Pass real exam data and ALL options to dialog */}
+            <EditExamDialog
+              exam={exam}
+              invigilatorOptions={invigilatorOptions}
+              departmentOptions={departmentOptions}
+              roomOptions={roomOptions}
+            />
+            {/* TODO: Implement DeleteExamDialog with client-side state/callbacks */}
             {/* <DeleteExamDialog examId={exam.id} /> */}
           </div>
         </div>
@@ -69,9 +88,10 @@ export default async function ExamDetailsPage({ params }: { params: { id: string
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    {/* Use real data */}
-                    <CardTitle className="text-2xl">{exam.courseName}</CardTitle>
-                    <CardDescription>{exam.courseCode}</CardDescription>
+                    {/* Use subject from schema */}
+                    <CardTitle className="text-2xl">{exam.subject}</CardTitle>
+                    {/* No course code in schema, maybe use department? */}
+                    <CardDescription>{exam.department?.name ?? 'Unknown Department'}</CardDescription>
                   </div>
                   {/* Use calculated status */}
                   <Badge
@@ -94,23 +114,30 @@ export default async function ExamDetailsPage({ params }: { params: { id: string
                     <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="font-medium">Date</p>
-                      {/* Format real dateTime */}
-                      <p className="text-muted-foreground">{format(exam.dateTime, 'PPP')}</p>
+                      {/* Format examDate */}
+                      <p className="text-muted-foreground">{format(new Date(exam.examDate), 'PPP')}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="font-medium">Time</p>
-                      {/* Format real dateTime */}
-                      <p className="text-muted-foreground">{format(exam.dateTime, 'p')} ({exam.duration} mins)</p>
+                      {/* Format startTime and endTime */}
+                      <p className="text-muted-foreground">
+                        {exam.startTime ? format(new Date(exam.startTime), 'p') : 'N/A'} - {exam.endTime ? format(new Date(exam.endTime), 'p') : 'N/A'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="font-medium">Room</p>
-                      <p className="text-muted-foreground">{exam.room}</p>
+                      <p className="font-medium">Rooms</p>
+                      {/* List rooms from examRooms relation */}
+                      <p className="text-muted-foreground">
+                        {exam.examRooms.length > 0
+                          ? exam.examRooms.map(er => er.room?.roomName ?? 'Unknown Room').join(', ')
+                          : 'N/A'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -118,9 +145,11 @@ export default async function ExamDetailsPage({ params }: { params: { id: string
                     <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="font-medium">Invigilators</p>
-                      {/* List real invigilators with explicit type */}
+                      {/* List invigilator names from nested user object */}
                       <p className="text-muted-foreground">
-                        {exam.invigilators.length > 0 ? exam.invigilators.map((inv: Invigilator) => inv.name).join(', ') : 'N/A'}
+                        {exam.invigilators.length > 0
+                          ? exam.invigilators.map(inv => inv.user?.name ?? inv.user?.email ?? 'Unknown Invigilator').join(', ')
+                          : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -145,15 +174,29 @@ export default async function ExamDetailsPage({ params }: { params: { id: string
                 <CardDescription>Students registered for this exam</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Student count doesn't exist on Exam model */}
-                <p className="text-muted-foreground">Total students: N/A</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Student list functionality is not implemented.
-                </p>
+                {/* Display student count and list */}
+                <p className="text-muted-foreground mb-4">Total students: {exam.students?.length ?? 0}</p>
+                {exam.students && exam.students.length > 0 ? (
+                  <ul className="space-y-2 max-h-60 overflow-y-auto">
+                    {exam.students.map(({ student }) => (
+                      <li key={student?.studentId} className="text-sm flex justify-between items-center">
+                        <span>{student?.user?.name ?? student?.user?.email ?? 'Unknown Student'}</span>
+                        <span className="text-xs text-muted-foreground">{student?.program ?? 'No Program'}</span>
+                        {/* Add button to remove student from exam later */}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    No students are currently enrolled in this exam.
+                  </p>
+                )}
+                {/* Add button to add students later */}
               </CardContent>
               <CardFooter>
-                <Button variant="outline" size="sm" className="ml-auto" disabled>
-                  Export Student List
+                {/* Keep Export button disabled for now */}
+                <Button variant="outline" size="sm" className="ml-auto mt-4" disabled>
+                  Export Student List (Not Implemented)
                 </Button>
               </CardFooter>
             </Card>
@@ -165,7 +208,8 @@ export default async function ExamDetailsPage({ params }: { params: { id: string
                 <CardTitle>Department</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>{exam.department}</p>
+                {/* Display department name */}
+                <p>{exam.department?.name ?? 'N/A'}</p>
               </CardContent>
             </Card>
 

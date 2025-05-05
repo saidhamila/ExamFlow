@@ -4,7 +4,7 @@ import type React from "react"
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Calendar, Users, LogOut, Menu, Home, User, Bell, BarChart, Building2, DoorOpen } from "lucide-react" // Added Building2, DoorOpen
+import { Calendar, Users, LogOut, Menu, Home, User, Bell, BarChart, Building2, DoorOpen, GraduationCap } from "lucide-react" // Added Building2, DoorOpen, GraduationCap
 import { useState, useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -105,6 +105,17 @@ export function AdminLayout({ children, notifications }: AdminLayoutProps) { // 
                     <Link href="/admin/invigilators">
                       <Users className="mr-2 h-4 w-4" />
                       Invigilators
+                    </Link>
+                  </Button>
+                  {/* Add Students Link - Mobile */}
+                  <Button
+                    variant={pathname.includes("/admin/students") ? "secondary" : "ghost"}
+                    className="justify-start"
+                    asChild
+                  >
+                    <Link href="/admin/students">
+                      <GraduationCap className="mr-2 h-4 w-4" />
+                      Students
                     </Link>
                   </Button>
                   {/* Add Departments Link - Mobile */}
@@ -226,6 +237,17 @@ export function AdminLayout({ children, notifications }: AdminLayoutProps) { // 
                 <Link href="/admin/invigilators">
                   <Users className="mr-2 h-4 w-4" />
                   Invigilators
+                </Link>
+              </Button>
+              {/* Add Students Link - Desktop */}
+              <Button
+                variant={pathname.includes("/admin/students") ? "secondary" : "ghost"}
+                className="justify-start"
+                asChild
+              >
+                <Link href="/admin/students">
+                  <GraduationCap className="mr-2 h-4 w-4" />
+                  Students
                 </Link>
               </Button>
               {/* Add Departments Link - Desktop */}

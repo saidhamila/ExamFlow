@@ -28,11 +28,20 @@ export type RoomWithBookingCount = PrismaRoom & {
 
 // Represents an Exam with its assigned invigilators (User details included) and rooms
 // Added validations relation
+// Import ExamStudent and Student types
+import type { ExamStudent as PrismaExamStudent, Student as PrismaStudent } from '@prisma/client';
+
 export type ExamWithDetails = PrismaExam & {
   invigilators: (PrismaInvigilatorAssignment & { user: PrismaUser | null, room: PrismaRoom | null })[];
   examRooms: (PrismaExamRoom & { room: PrismaRoom | null })[];
   department: PrismaDepartment | null;
   validations: PrismaValidation[]; // Include validations
+  // Add students relation with nested user details
+  students: (PrismaExamStudent & {
+    student: (PrismaStudent & {
+      user: PrismaUser | null; // Include user details for the student
+    }) | null;
+  })[];
 };
 
 // Represents an Invigilator Assignment (Junction Table Record) with User details
@@ -77,6 +86,17 @@ export type AddInvigilatorAssignmentInput = {
     roomId: string;
 };
 
+// Represents a Student User with their profile details
+export type StudentWithDetails = PrismaUser & {
+  studentProfile: {
+    studentId: string;
+    program: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null; // Student profile might be null if not created yet
+};
+
+// --- Data Fetching Functions ---
 // --- Data Fetching Functions ---
 
 // Define types for filters and pagination options
@@ -171,7 +191,17 @@ export async function getExams(
               room: true
           }
         },
-        validations: true // Include validations
+        validations: true, // Include validations
+        // Also include students here for consistency with ExamWithDetails type
+        students: {
+          include: {
+            student: {
+              include: {
+                user: true
+              }
+            }
+          }
+        }
       },
       orderBy: [ // Default sort order, can be parameterized too
         { examDate: 'asc' },
@@ -289,7 +319,17 @@ export async function getExamById(id: string): Promise<ExamWithDetails | null> {
             }
         },
         department: true,
-        validations: true // Include validations
+        validations: true, // Include validations
+        // Include students relation with nested student and user details
+        students: {
+          include: {
+            student: {
+              include: {
+                user: true // Fetch the user associated with the student profile
+              }
+            }
+          }
+        }
       },
     });
     if (exam) {
@@ -387,10 +427,34 @@ function parseTimeString(date: Date, timeString: string): Date {
         throw new Error(`Invalid time format: ${timeString}. Expected HH:MM.`);
     }
 }
+// Fetches users with the ETUDIANT role and their student profile
+export async function getStudents(): Promise<StudentWithDetails[]> {
+  console.log("Fetching student users from DB...");
+  try {
+    const students = await prisma.user.findMany({
+      where: {
+        role: UserRole.ETUDIANT, // Filter by student role
+      },
+      include: {
+        studentProfile: true, // Include the related student profile data
+      },
+      orderBy: {
+        name: 'asc', // Order by name
+      },
+    });
+    console.log(`Fetched ${students.length} student users.`);
+    return students;
+  } catch (error) {
+    console.error("Database Error (getStudents):", error);
+    throw new Error("Failed to fetch students.");
+  }
+}
 
 export async function addExam(examData: AddExamInput): Promise<PrismaExam> {
   console.log("Adding exam to DB:", examData);
   try {
+
+// --- Data Mutation Functions ---
     const dateOnly = parse(examData.examDate, 'yyyy-MM-dd', new Date());
     const startTime = parseTimeString(dateOnly, examData.startTime);
     const endTime = parseTimeString(dateOnly, examData.endTime);
@@ -656,6 +720,16 @@ export async function getExamsForChefValidation(chefUserId: string): Promise<Exa
                     // Remove orderBy, rely on filtering logic below
                     take: 1 // Take the most recent one (Prisma doesn't guarantee which without orderBy)
                            // If strict latest is needed, fetch all and sort in code, or add createdAt to Validation model
+                },
+                // Include students for Chef validation view
+                students: {
+                  include: {
+                    student: {
+                      include: {
+                        user: true
+                      }
+                    }
+                  }
                 }
             },
             orderBy: [{ examDate: 'asc' }, { startTime: 'asc' }],
@@ -690,6 +764,16 @@ export async function getExamsForDirecteurValidation(directeurUserId: string): P
                 validations: {
                     // Remove orderBy
                     take: 1 // Get *a* validation record
+                },
+                // Include students for Directeur validation view
+                students: {
+                  include: {
+                    student: {
+                      include: {
+                        user: true
+                      }
+                    }
+                  }
                 }
             },
             orderBy: [{ examDate: 'asc' }, { startTime: 'asc' }],
